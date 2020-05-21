@@ -356,11 +356,11 @@
                 }
             },
 
-            evtFormatTime: function (evt) {
+            evtFormatTime: function () {
                 GUI.formatTime(this);
             },
 
-            evtSetTime: function (evt) {
+            evtSetTime: function () {
                 Timer.setSecs(GUI.getTimer());
             },
 
@@ -375,7 +375,20 @@
                 $("sessionsBadge").setAttribute('data-badge', evt.target.value);
             },
 
-            evtClick: function (evt) {
+            evtSetSessionBadge: function (evt) {
+                if (evt) evt.stopPropagation();
+
+                const leftButton = 0;
+                const middleButton = 1;
+
+                if (evt.button === leftButton) {
+                    GUI.incSession()
+                } else if (evt.button === middleButton) {
+                    GUI.setSession(0);
+                }
+            },
+
+            evtStartStopReset: function (evt) {
                 const leftButton = 0;
                 const middleButton = 1;
 
@@ -399,7 +412,7 @@
                 }
             },
 
-            evtReset: function (evt) {
+            evtReset: function () {
                 App.reset();
             },
 
@@ -408,7 +421,7 @@
                 evt.preventDefault();
             },
 
-            evtDisableShortBreak: function (evt) {
+            evtDisableShortBreak: function () {
                 if (this.checked) {
                     $(this.id + "Now").disabled = false;
                     $(this.id + "Minutes").disabled = false;
@@ -589,7 +602,7 @@
             }
         };
 
-        var App = {
+        const App = {
 
             firstTime: true,
 
@@ -713,14 +726,6 @@
                 }
             },
 
-            setTime: function () {
-                Timer.setSecs(GUI.getTimer());
-            },
-
-            formatTime: function () {
-                GUI.formatTime(this);
-            },
-
             selectText: function (evt) {
                 evt.target.select();
             }
@@ -755,6 +760,7 @@
             secondsElem.addEventListener('focus', GUI.evtFocusTime, false);
 
             $("sessionCounter").addEventListener('change', GUI.evtSetSession, false);
+            $("sessionsBadge").addEventListener('mouseup', GUI.evtSetSessionBadge, false);
 
             $("workNow").addEventListener('click', App.startWorkNow, false);
             $("shortbreakNow").addEventListener('click', App.startShortBreakNow, false);
@@ -775,7 +781,7 @@
             }, false);
 
             const fullscreenElem = $("fullscreen");
-            fullscreenElem.addEventListener('mouseup', GUI.evtClick, false);
+            fullscreenElem.addEventListener('mouseup', GUI.evtStartStopReset, false);
             fullscreenElem.addEventListener('contextmenu', GUI.evtNextState, false);
 
             const orientation = screen.msOrientation || (screen.orientation || screen.mozOrientation);
@@ -941,6 +947,7 @@
     </button>
     <div class="mdl-tooltip mdl-tooltip--right" data-mdl-for="minimizeButton">Back</div>
     <span id="sessionsBadge" class="mdl-badge" data-badge="0"></span>
+    <div class="mdl-tooltip mdl-tooltip--left" data-mdl-for="sessionsBadge">Sessions</div>
     <div id="fullscreenClock"><span id="fullscreenMinutes">25</span>:<span id="fullscreenSeconds">00</span></div>
 </div>
 
