@@ -96,45 +96,31 @@
 
                 GUI.setTimer(this.secs);
 
-                if (this.secs <= 0) {
-
+                if (this.secs > 0) {
+                    this.timerRunning = self.setTimeout(function () {
+                        Timer.start();
+                    }, 1000);
+                } else {
                     App.stop();
 
-                    const repeat = $("repeat").checked;
-
                     if (this.state === "work") {
-
-                        const shortbreak = $("shortbreak").checked;
-                        const longbreak = $("longbreak").checked;
-                        const longBreakSessions = GUI.decLongBreakSession();
                         this.session = GUI.incSession();
-
-                        if (shortbreak && (!longbreak || longBreakSessions !== 0)) {
-                            this.ring("shortbreak");
-                            this.setState("shortbreak", true);
-                        } else if (longbreak && longBreakSessions === 0) {
+                        if ($("longbreak").checked && GUI.decLongBreakSession() === 0) {
                             this.ring("longbreak");
                             this.setState("longbreak", true);
                             $("longbreakSession").value = this.longbreakSession;
-                        } else if (repeat) {
-                            this.ring("work");
-                            this.setState("work", true);
-                        } else if (!repeat) {
-                            this.ring("end");
-                            this.setState("end");
-                        }
-                    } else if (this.state === "shortbreak") {
-
-                        if (repeat) {
+                        } else if ($("shortbreak").checked) {
+                            this.ring("shortbreak");
+                            this.setState("shortbreak", true);
+                        } else if ($("repeat").checked) {
                             this.ring("work");
                             this.setState("work", true);
                         } else {
                             this.ring("end");
                             this.setState("end");
                         }
-                    } else if (this.state === "longbreak") {
-
-                        if (repeat) {
+                    } else if (this.state === "shortbreak" || this.state === "longbreak") {
+                        if ($("repeat").checked) {
                             this.ring("work");
                             this.setState("work", true);
                         } else {
@@ -142,10 +128,6 @@
                             this.setState("end");
                         }
                     }
-                } else {
-                    this.timerRunning = self.setTimeout(function () {
-                        Timer.start();
-                    }, 1000);
                 }
             },
 
@@ -282,6 +264,28 @@
                 stopButton.style.display = "none";
 
                 startButton.focus();
+            },
+
+            initAudio: function () {
+                // This is a workaround to make sounds work on Android, since a user gesture is required:
+                // The first time the user clicks on the "Start" button
+                const workAudio = $("workAudio");
+                const shortbreakAudio = $("shortbreakAudio");
+                const longbreakAudio = $("longbreakAudio");
+                const endAudio = $("endAudio");
+
+                // Set the volume of all audio elements to 0 (mute them)
+                workAudio.volume = 0.0;
+                shortbreakAudio.volume = 0.0;
+                longbreakAudio.volume = 0.0;
+                endAudio.volume = 0.0;
+
+                // And play all audio elements once (no sound will be heard)
+                // (This makes the play() function work later from inside the setTimeout() function)
+                workAudio.play();
+                shortbreakAudio.play();
+                longbreakAudio.play();
+                endAudio.play();
             },
 
             formatTime: function (input, value) {
@@ -492,7 +496,7 @@
                     const cardHeight = card.offsetHeight + margin;
 
                     if (window.innerWidth <= cardWidth || window.innerHeight <= cardHeight) {
-                        if(!GUI.isFullscreen) GUI.evtMaximize()
+                        if (!GUI.isFullscreen) GUI.evtMaximize()
                     } else if (GUI.isFullscreen) {
                         GUI.evtMinimize()
                     }
@@ -559,28 +563,8 @@
             firstTime: true,
 
             start: function () {
-                // This is a workaround to make sounds work on Android, since a user gesture is required:
-                // The first time the user clicks on the "Start" button
                 if (App.firstTime) {
-                    const workAudio = $("workAudio");
-                    const shortbreakAudio = $("shortbreakAudio");
-                    const longbreakAudio = $("longbreakAudio");
-                    const endAudio = $("endAudio");
-
-                    // Set the volume of all audio elements to 0 (mute them)
-                    workAudio.volume = 0.0;
-                    shortbreakAudio.volume = 0.0;
-                    longbreakAudio.volume = 0.0;
-                    endAudio.volume = 0.0;
-
-                    // And play all audio elements once (no sound will be heard)
-                    // (This makes the play() function work later from inside the setTimeout() function)
-                    workAudio.play();
-                    shortbreakAudio.play();
-                    longbreakAudio.play();
-                    endAudio.play();
-
-                    // Set this variable to false, so that this snippet is never run again throughout this session
+                    GUI.initAudio();
                     App.firstTime = false;
                 }
 
@@ -619,8 +603,16 @@
                 App.stop();
 
                 if (Timer.state === "work") {
-                    Timer.setState("shortbreak", true);
-                } else if (Timer.state === "shortbreak") {
+                    if($("shortbreak").checked){
+                        Timer.setState("shortbreak", true);
+                    }
+                    else if($("longbreak").checked){
+                        Timer.setState("longbreak", true);
+                    }
+                    else {
+                        App.start();
+                    }
+                } else if (Timer.state === "shortbreak" && $("longbreak").checked) {
                     Timer.setState("longbreak", true);
                 } else {
                     Timer.setState("work", true);
@@ -687,6 +679,7 @@
             }
         };
 
+        window.addEventListener("resize", GUI.evtExpandOnResize, false);
         window.addEventListener("load", function () {
 
             const allInputs = document.getElementsByTagName("input");
@@ -751,7 +744,7 @@
 
         }, false);
 
-        window.addEventListener("resize", GUI.evtExpandOnResize, false);
+        /*]]>*/
     </script>
     <style type="text/css">
         /*<![CDATA[*/
