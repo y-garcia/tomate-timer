@@ -24,7 +24,6 @@
         /*<![CDATA[*/
 
         /* Constants */
-        const notificationTimeout = 10000; // in milliseconds
         const notificationSounds = [];
         notificationSounds["work"] = "audio/S_Charming_bell.ogg";
         notificationSounds["shortbreak"] = "audio/jingle.mp3";
@@ -97,67 +96,38 @@
 
                 GUI.setTimer(this.secs);
 
-                if (this.secs <= 0) {
-
+                if (this.secs > 0) {
+                    this.timerRunning = self.setTimeout(function () {
+                        Timer.start();
+                    }, 1000);
+                } else {
                     App.stop();
 
-                    var repeat = $("repeat").checked;
-
                     if (this.state === "work") {
-
-                        var shortbreak = $("shortbreak").checked;
-                        var longbreak = $("longbreak").checked;
                         this.session = GUI.incSession();
-
-                        if (longbreak) {
-                            lpSession = GUI.decLongBreakSession();
-                        }
-
-                        if (shortbreak && (!longbreak || lpSession !== 0)) {
-
-                            this.ring("shortbreak");
-                            this.setState("shortbreak", true);
-                        } else if (longbreak && lpSession === 0) {
-
+                        if ($("longbreak").checked && GUI.decLongBreakSession() === 0) {
                             this.ring("longbreak");
                             this.setState("longbreak", true);
                             $("longbreakSession").value = this.longbreakSession;
-                        } else if (repeat) {
-
-                            this.ring("work");
-                            this.setState("work", true);
-                        } else if (!repeat) {
-
-                            this.ring("end");
-                            this.setState("end");
-                        }
-                    } else if (this.state === "shortbreak") {
-
-                        if (repeat) {
-
+                        } else if ($("shortbreak").checked) {
+                            this.ring("shortbreak");
+                            this.setState("shortbreak", true);
+                        } else if ($("repeat").checked) {
                             this.ring("work");
                             this.setState("work", true);
                         } else {
-
                             this.ring("end");
                             this.setState("end");
                         }
-                    } else if (this.state === "longbreak") {
-
-                        if (repeat) {
-
+                    } else if (this.state === "shortbreak" || this.state === "longbreak") {
+                        if ($("repeat").checked) {
                             this.ring("work");
                             this.setState("work", true);
                         } else {
-
                             this.ring("end");
                             this.setState("end");
                         }
                     }
-                } else {
-                    this.timerRunning = self.setTimeout(function () {
-                        Timer.start();
-                    }, 1000);
                 }
             },
 
@@ -218,13 +188,13 @@
 
             decLongBreakSession: function () {
 
-                let i = parseInt($("longbreakSession").value, 10) - 1;
+                let value = this.getLongBreakSession() - 1;
 
-                if (i < 0) i = 0;
+                if (value < 0) value = 0;
 
-                $("longbreakSession").value = i;
+                this.setLongBreakSession(value);
 
-                return i;
+                return value;
             },
 
             setSession: function (s) {
@@ -264,30 +234,58 @@
 
                 if (state === "end") return 0;
 
-                var htmlMinutes = $(state + "Minutes").value;
-                var htmlSeconds = $(state + "Seconds").value;
+                const htmlMinutes = $(state + "Minutes").value;
+                const htmlSeconds = $(state + "Seconds").value;
 
                 return parseInt(htmlMinutes, 10) * 60 + parseInt(htmlSeconds, 10);
             },
 
             lockTimer: function () {
-                $("startButton").disabled = true;
-                $("startButton").style.display = "none";
+                const startButton = $("startButton")
+                const stopButton = $("stopButton")
 
-                $("stopButton").disabled = false;
-                $("stopButton").style.display = "inline";
+                startButton.disabled = true;
+                startButton.style.display = "none";
 
-                $("stopButton").focus();
+                stopButton.disabled = false;
+                stopButton.style.display = "inline";
+
+                stopButton.focus();
             },
 
             unlockTimer: function () {
-                $("startButton").disabled = false;
-                $("startButton").style.display = "inline";
+                const startButton = $("startButton")
+                const stopButton = $("stopButton")
 
-                $("stopButton").disabled = true;
-                $("stopButton").style.display = "none";
+                startButton.disabled = false;
+                startButton.style.display = "inline";
 
-                $("startButton").focus();
+                stopButton.disabled = true;
+                stopButton.style.display = "none";
+
+                startButton.focus();
+            },
+
+            initAudio: function () {
+                // This is a workaround to make sounds work on Android, since a user gesture is required:
+                // The first time the user clicks on the "Start" button
+                const workAudio = $("workAudio");
+                const shortbreakAudio = $("shortbreakAudio");
+                const longbreakAudio = $("longbreakAudio");
+                const endAudio = $("endAudio");
+
+                // Set the volume of all audio elements to 0 (mute them)
+                workAudio.volume = 0.0;
+                shortbreakAudio.volume = 0.0;
+                longbreakAudio.volume = 0.0;
+                endAudio.volume = 0.0;
+
+                // And play all audio elements once (no sound will be heard)
+                // (This makes the play() function work later from inside the setTimeout() function)
+                workAudio.play();
+                shortbreakAudio.play();
+                longbreakAudio.play();
+                endAudio.play();
             },
 
             formatTime: function (input, value) {
@@ -324,18 +322,14 @@
             },
 
             isNumericKey: function (evt) {
-                const e = evt ? evt : window.event;
-                const code = e.keyCode ? e.keyCode : e.which;
+                const code = evt.keyCode;
 
                 /* if it is a number (0-9)  */
                 return 48 <= code && code <= 57 || 96 <= code && code <= 105;
             },
 
             isEnterKey: function (evt) {
-                const e = evt ? evt : window.event;
-                const code = e.keyCode ? e.keyCode : e.which;
-
-                return code === 13;
+                return evt.keyCode === 13;
             },
 
             keyDownInput: null,
@@ -356,11 +350,11 @@
                 }
             },
 
-            evtFormatTime: function (evt) {
+            evtFormatTime: function () {
                 GUI.formatTime(this);
             },
 
-            evtSetTime: function (evt) {
+            evtSetTime: function () {
                 Timer.setSecs(GUI.getTimer());
             },
 
@@ -375,7 +369,20 @@
                 $("sessionsBadge").setAttribute('data-badge', evt.target.value);
             },
 
-            evtClick: function (evt) {
+            evtSetSessionBadge: function (evt) {
+                if (evt) evt.stopPropagation();
+
+                const leftButton = 0;
+                const middleButton = 1;
+
+                if (evt.button === leftButton) {
+                    GUI.incSession()
+                } else if (evt.button === middleButton) {
+                    GUI.setSession(0);
+                }
+            },
+
+            evtStartStopReset: function (evt) {
                 const leftButton = 0;
                 const middleButton = 1;
 
@@ -399,7 +406,7 @@
                 }
             },
 
-            evtReset: function (evt) {
+            evtReset: function () {
                 App.reset();
             },
 
@@ -408,7 +415,7 @@
                 evt.preventDefault();
             },
 
-            evtDisableShortBreak: function (evt) {
+            evtDisableShortBreak: function () {
                 if (this.checked) {
                     $(this.id + "Now").disabled = false;
                     $(this.id + "Minutes").disabled = false;
@@ -422,7 +429,7 @@
                 }
             },
 
-            evtDisableLongBreak: function (evt) {
+            evtDisableLongBreak: function () {
                 if (this.checked) {
                     $(this.id + "Now").disabled = false;
                     $(this.id + "Minutes").disabled = false;
@@ -440,7 +447,7 @@
                 }
             },
 
-            evtDisableRepeat: function (evt) {
+            evtDisableRepeat: function () {
                 if (this.checked) {
                     $(this.id + "Settings").classList.remove("is-disabled");
                 } else {
@@ -448,7 +455,7 @@
                 }
             },
 
-            evtToggleSettings: function (evt) {
+            evtToggleSettings: function () {
                 const settingsElem = $("cardSettings");
                 if (settingsElem.style.display === "block") {
                     settingsElem.style.display = "none";
@@ -489,7 +496,7 @@
                     const cardHeight = card.offsetHeight + margin;
 
                     if (window.innerWidth <= cardWidth || window.innerHeight <= cardHeight) {
-                        if(!GUI.isFullscreen) GUI.evtMaximize()
+                        if (!GUI.isFullscreen) GUI.evtMaximize()
                     } else if (GUI.isFullscreen) {
                         GUI.evtMinimize()
                     }
@@ -551,67 +558,13 @@
             }
         };
 
-        const Notifications = {
-
-            show: function (nextState) {
-                // check for notifications support
-                if (Notification) {
-
-                    // If the user has already granted permissions for notifications
-                    if (Notification.permission === "granted") { // 0 is PERMISSION_ALLOWED
-                        this.create(nextState);
-                    }
-                    // Otherwise, we need to ask the user for permission
-                    else if (Notification.permission !== 'denied') {
-                        Notification.requestPermission(
-                            function (permission) {
-                                // If the user accepts, let's create a notification right away
-                                if (permission === "granted") {
-                                    Notifications.create(nextState);
-                                }
-                            }
-                        );
-                    } else {
-                        console.log("Notifications denied by the user");
-                    }
-                } else {
-                    console.log("Notifications are not supported for this Browser/OS version yet.");
-                }
-            },
-
-            create: function (nextState) {
-                const options = {
-                    body: notificationDescriptions[nextState],
-                    icon: notificationIcons[nextState],
-                };
-                const n = new Notification(notificationTitles[nextState], options);
-                setTimeout(n.close.bind(n), notificationTimeout);
-            }
-        };
-
-        var App = {
+        const App = {
 
             firstTime: true,
 
             start: function () {
-                // This is a workaround to make sounds work on Android, since a user gesture is required:
-                // The first time the user clicks on the "Start" button
                 if (App.firstTime) {
-
-                    // Set the volume of all audio elements to 0 (mute them)
-                    $("workAudio").volume = 0.0;
-                    $("shortbreakAudio").volume = 0.0;
-                    $("longbreakAudio").volume = 0.0;
-                    $("endAudio").volume = 0.0;
-
-                    // And play all audio elements once (no sound will be heard)
-                    // (This makes the play() function work later from inside the setTimeout() function)
-                    $("workAudio").play();
-                    $("shortbreakAudio").play();
-                    $("longbreakAudio").play();
-                    $("endAudio").play();
-
-                    // Set this variable to false, so that this snippet is never run again throughout this session
+                    GUI.initAudio();
                     App.firstTime = false;
                 }
 
@@ -650,8 +603,16 @@
                 App.stop();
 
                 if (Timer.state === "work") {
-                    Timer.setState("shortbreak", true);
-                } else if (Timer.state === "shortbreak") {
+                    if($("shortbreak").checked){
+                        Timer.setState("shortbreak", true);
+                    }
+                    else if($("longbreak").checked){
+                        Timer.setState("longbreak", true);
+                    }
+                    else {
+                        App.start();
+                    }
+                } else if (Timer.state === "shortbreak" && $("longbreak").checked) {
                     Timer.setState("longbreak", true);
                 } else {
                     Timer.setState("work", true);
@@ -713,19 +674,12 @@
                 }
             },
 
-            setTime: function () {
-                Timer.setSecs(GUI.getTimer());
-            },
-
-            formatTime: function () {
-                GUI.formatTime(this);
-            },
-
             selectText: function (evt) {
                 evt.target.select();
             }
         };
 
+        window.addEventListener("resize", GUI.evtExpandOnResize, false);
         window.addEventListener("load", function () {
 
             const allInputs = document.getElementsByTagName("input");
@@ -755,6 +709,7 @@
             secondsElem.addEventListener('focus', GUI.evtFocusTime, false);
 
             $("sessionCounter").addEventListener('change', GUI.evtSetSession, false);
+            $("sessionsBadge").addEventListener('mouseup', GUI.evtSetSessionBadge, false);
 
             $("workNow").addEventListener('click', App.startWorkNow, false);
             $("shortbreakNow").addEventListener('click', App.startShortBreakNow, false);
@@ -775,7 +730,7 @@
             }, false);
 
             const fullscreenElem = $("fullscreen");
-            fullscreenElem.addEventListener('mouseup', GUI.evtClick, false);
+            fullscreenElem.addEventListener('mouseup', GUI.evtStartStopReset, false);
             fullscreenElem.addEventListener('contextmenu', GUI.evtNextState, false);
 
             const orientation = screen.msOrientation || (screen.orientation || screen.mozOrientation);
@@ -789,7 +744,7 @@
 
         }, false);
 
-        window.addEventListener("resize", GUI.evtExpandOnResize, false);
+        /*]]>*/
     </script>
     <style type="text/css">
         /*<![CDATA[*/
@@ -842,7 +797,7 @@
             font-size: 20px;
             text-align: center;
             display: inline;
-            padding: 0px;
+            padding: 0;
         }
 
         #cardSettings {
@@ -941,6 +896,7 @@
     </button>
     <div class="mdl-tooltip mdl-tooltip--right" data-mdl-for="minimizeButton">Back</div>
     <span id="sessionsBadge" class="mdl-badge" data-badge="0"></span>
+    <div class="mdl-tooltip mdl-tooltip--left" data-mdl-for="sessionsBadge">Sessions</div>
     <div id="fullscreenClock"><span id="fullscreenMinutes">25</span>:<span id="fullscreenSeconds">00</span></div>
 </div>
 
@@ -1032,26 +988,48 @@
                                                 <span class="material-icons">play_arrow</span>
                                             </button>
                                         </span>
-										<span><input id="workMinutes" class="time mdl-textfield__input" type="number"
-                                                     maxlength="2" value="25"/>m <input id="workSeconds"
-                                                                                        class="time mdl-textfield__input"
-                                                                                        type="number" maxlength="2"
-                                                                                        value="00"/>s</span>
+										<span>
+                                            <input id="workMinutes"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="25"/><label for="workMinutes">m</label>
+                                            <input id="workSeconds"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="00"/><label for="workSeconds">s</label>
+                                        </span>
 										<span class="mdl-list__item-sub-title">Work timer</span>
-										<div class="mdl-tooltip mdl-tooltip--top" data-mdl-for="workNow">Start the work timer now</div>
+										<span class="mdl-tooltip mdl-tooltip--top" data-mdl-for="workNow">
+                                            Start the work timer now
+                                        </span>
 									</span>
                                 </li>
                                 <li id="shortbreakSettings" class="mdl-list__item mdl-list__item--two-line">
 									<span class="mdl-list__item-primary-content">
-										<i class="mdl-list__item-avatar"><button id="shortbreakNow"
-                                                                                 class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab"><i
-                                                class="material-icons">play_arrow</i></button></i>
-										<span><input id="shortbreakMinutes" class="time mdl-textfield__input"
-                                                     type="number" maxlength="2" value="05"/>m <input
-                                                id="shortbreakSeconds" class="time mdl-textfield__input" type="number"
-                                                maxlength="2" value="00"/>s</span>
+										<span class="mdl-list__item-avatar">
+                                            <button id="shortbreakNow"
+                                                    class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
+                                                <span class="material-icons">play_arrow</span>
+                                            </button>
+                                        </span>
+                                        <span>
+                                            <input id="shortbreakMinutes"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="05"/><label for="shortbreakMinutes">m</label>
+                                            <input id="shortbreakSeconds"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="00"/><label for="shortbreakSeconds">s</label>
+                                        </span>
 										<span class="mdl-list__item-sub-title">Break timer</span>
-										<div class="mdl-tooltip mdl-tooltip--top" data-mdl-for="shortbreakNow">Start the break timer now</div>
+										<span class="mdl-tooltip mdl-tooltip--top" data-mdl-for="shortbreakNow">
+                                            Start the break timer now
+                                        </span>
 									</span>
                                     <span class="mdl-list__item-secondary-action">
 										<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="shortbreak">
@@ -1062,15 +1040,28 @@
                                 </li>
                                 <li id="longbreakSettings" class="mdl-list__item mdl-list__item--two-line">
 									<span class="mdl-list__item-primary-content">
-										<i class="mdl-list__item-avatar"><button id="longbreakNow"
-                                                                                 class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab"><i
-                                                class="material-icons">play_arrow</i></button></i>
-										<span><input id="longbreakMinutes" class="time mdl-textfield__input"
-                                                     type="number" maxlength="2" value="20"/>m <input
-                                                id="longbreakSeconds" class="time mdl-textfield__input" type="number"
-                                                maxlength="2" value="00"/>s</span>
+										<span class="mdl-list__item-avatar">
+                                            <button id="longbreakNow"
+                                                    class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab">
+                                                <span class="material-icons">play_arrow</span>
+                                            </button>
+                                        </span>
+										<span>
+                                            <input id="longbreakMinutes"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="20"/><label for="longbreakMinutes">m</label>
+                                            <input id="longbreakSeconds"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   maxlength="2"
+                                                   value="00"/><label for="longbreakSeconds">s</label>
+                                        </span>
 										<span class="mdl-list__item-sub-title">Long break timer</span>
-										<div class="mdl-tooltip mdl-tooltip--top" data-mdl-for="longbreakNow">Start the long break timer now</div>
+										<span class="mdl-tooltip mdl-tooltip--top" data-mdl-for="longbreakNow">
+                                            Start the long break timer now
+                                        </span>
 									</span>
                                     <span class="mdl-list__item-secondary-action">
 										<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="longbreak">
@@ -1081,16 +1072,22 @@
                                 </li>
                                 <li id="longbreakSettings2" class="mdl-list__item mdl-list__item--two-line">
 									<span class="mdl-list__item-primary-content">
-										<span>Long break after <input id="longbreakSession"
-                                                                      class="time mdl-textfield__input" type="number"
-                                                                      value="4"/> sessions</span>
+										<span>
+                                            Long break after
+                                            <input id="longbreakSession"
+                                                   class="time mdl-textfield__input"
+                                                   type="number"
+                                                   value="4"/> <label for="longbreakSession">sessions</label>
+                                        </span>
 									</span>
                                 </li>
                                 <li id="repeatSettings" class="mdl-list__item">
 									<span class="mdl-list__item-primary-content">
-										<i class="material-icons mdl-list__item-icon">repeat</i>
+										<span class="material-icons mdl-list__item-icon">repeat</span>
 										<span id="autoRepeat">auto-repeat</span>
-										<div class="mdl-tooltip mdl-tooltip--top" data-mdl-for="autoRepeat">Whether the timer should continue with the next session automatically</div>
+										<span class="mdl-tooltip mdl-tooltip--top" data-mdl-for="autoRepeat">
+                                            Whether the timer should continue with the next session automatically
+                                        </span>
 									</span>
                                     <span class="mdl-list__item-secondary-action">
 										<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="repeat">
