@@ -20,6 +20,8 @@
     <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue-red.min.css"/>
     <!-- JS -->
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <script src="lib/mousetrap.min.js"></script>
+    <script src="lib/mousetrap-global-bind.min.js"></script>
     <script type="text/javascript">
         /*<![CDATA[*/
 
@@ -181,8 +183,8 @@
             },
 
             incSession: function () {
-                let i = this.getSession() + 1;
-                this.setSession(i);
+                let i = GUI.getSession() + 1;
+                GUI.setSession(i);
                 return i;
             },
 
@@ -195,6 +197,10 @@
                 this.setLongBreakSession(value);
 
                 return value;
+            },
+
+            resetSession: function() {
+                GUI.setSession(0);
             },
 
             setSession: function (s) {
@@ -250,7 +256,8 @@
                 stopButton.disabled = false;
                 stopButton.style.display = "inline";
 
-                stopButton.focus();
+                $("Minutes").blur();
+                $("Seconds").blur();
             },
 
             unlockTimer: function () {
@@ -263,7 +270,8 @@
                 stopButton.disabled = true;
                 stopButton.style.display = "none";
 
-                startButton.focus();
+                $("Minutes").blur();
+                $("Seconds").blur();
             },
 
             initAudio: function () {
@@ -365,6 +373,11 @@
                 evt.target.select();
             },
 
+            evtEditTime: function(){
+                GUI.evtMinimize();
+                $("Minutes").focus();
+            },
+
             evtSetSession: function (evt) {
                 $("sessionsBadge").setAttribute('data-badge', evt.target.value);
             },
@@ -378,7 +391,7 @@
                 if (evt.button === leftButton) {
                     GUI.incSession()
                 } else if (evt.button === middleButton) {
-                    GUI.setSession(0);
+                    GUI.resetSession();
                 }
             },
 
@@ -387,22 +400,17 @@
                 const middleButton = 1;
 
                 if (evt.button === leftButton) {
-                    GUI.evtStartStop(evt);
+                    GUI.evtStartStop();
                 } else if (evt.button === middleButton) {
-                    GUI.evtReset(evt);
+                    GUI.evtReset();
                 }
             },
 
-            evtStartStop: function (evt) {
-                const isFullscreen = evt.type === "mouseup" &&
-                    evt.target.id === "fullscreenClock" || evt.target.parentNode.id === "fullscreenClock";
-
-                if (GUI.isEnterKey(evt) || isFullscreen) {
-                    if (Timer.timerRunning) {
-                        App.stop();
-                    } else {
-                        App.start();
-                    }
+            evtStartStop: function () {
+                if (Timer.timerRunning) {
+                    App.stop();
+                } else {
+                    App.start();
                 }
             },
 
@@ -461,10 +469,21 @@
                     settingsElem.style.display = "none";
                     $("settingsIcon").innerHTML = "settings";
                     $("settingsTooltip").innerHTML = "Settings";
+                    $("settingsButton").focus();
                 } else {
                     settingsElem.style.display = "block";
                     $("settingsIcon").innerHTML = "close";
                     $("settingsTooltip").innerHTML = "Close settings";
+                    $("settingsButton").focus();
+                }
+            },
+
+            evtToggleMaximize: function(){
+                if(GUI.isFullscreen){
+                    GUI.evtMinimize();
+                }
+                else {
+                    GUI.evtMaximize();
                 }
             },
 
@@ -698,7 +717,6 @@
                 elem.addEventListener('blur', GUI.evtFormatTime, false);
                 elem.addEventListener('keydown', GUI.evtCacheInput, false);
                 elem.addEventListener('keyup', GUI.evtJumpToNextInput, false);
-                elem.addEventListener('keypress', GUI.evtStartStop, false);
             }
 
             const minutesElem = $("Minutes");
@@ -743,6 +761,16 @@
             Timer.init();
 
         }, false);
+
+        Mousetrap.bindGlobal(['enter', 'space'], GUI.evtStartStop);
+        Mousetrap.bindGlobal('r', GUI.evtReset);
+        Mousetrap.bindGlobal('n', GUI.evtNextState);
+        Mousetrap.bindGlobal('f', GUI.evtToggleMaximize);
+        Mousetrap.bindGlobal(['esc', 'u'], GUI.evtMinimize);
+        Mousetrap.bindGlobal('e', GUI.evtEditTime, 'keyup');
+        Mousetrap.bindGlobal('s', GUI.evtToggleSettings);
+        Mousetrap.bindGlobal('+', GUI.incSession);
+        Mousetrap.bindGlobal('-', GUI.resetSession);
 
         /*]]>*/
     </script>
