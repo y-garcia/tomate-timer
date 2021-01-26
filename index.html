@@ -423,6 +423,18 @@
                 evt.preventDefault();
             },
 
+            toggleShortBreak: function(){
+                $("shortbreak").click();
+            },
+
+            toggleLongBreak: function(){
+                $("longbreak").click();
+            },
+
+            toggleRepeat: function(){
+                $("repeat").click();
+            },
+
             evtDisableShortBreak: function () {
                 if (this.checked) {
                     $(this.id + "Now").disabled = false;
@@ -771,6 +783,9 @@
         Mousetrap.bindGlobal('s', GUI.evtToggleSettings);
         Mousetrap.bindGlobal('+', GUI.incSession);
         Mousetrap.bindGlobal('-', GUI.resetSession);
+        Mousetrap.bindGlobal('t b', GUI.toggleShortBreak);
+        Mousetrap.bindGlobal('t l', GUI.toggleLongBreak);
+        Mousetrap.bindGlobal('t r', GUI.toggleRepeat);
 
         /*]]>*/
     </script>
