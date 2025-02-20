@@ -26,26 +26,21 @@
         /*<![CDATA[*/
 
         /* Constants */
-        const notificationSounds = [];
-        notificationSounds["work"] = "audio/S_Charming_bell.ogg";
-        notificationSounds["shortbreak"] = "audio/jingle.mp3";
-        notificationSounds["longbreak"] = "audio/S_Temple_bell.ogg";
-        notificationSounds["end"] = "audio/S_Pure_Bell.ogg";
         const notificationIcons = [];
-        notificationIcons["work"] = "clock.png";
-        notificationIcons["shortbreak"] = "clock.png";
-        notificationIcons["longbreak"] = "clock.png";
-        notificationIcons["end"] = "clock.png";
+        notificationIcons["work"] = "icon.png";
+        notificationIcons["shortbreak"] = "icon.png";
+        notificationIcons["longbreak"] = "icon.png";
+        notificationIcons["end"] = "icon.png";
         const notificationTitles = [];
         notificationTitles["work"] = "Work";
         notificationTitles["shortbreak"] = "Break";
         notificationTitles["longbreak"] = "Long break";
         notificationTitles["end"] = "End";
         const notificationDescriptions = [];
-        notificationDescriptions["work"] = "Ok, enough monkeyness. Get to work!";
-        notificationDescriptions["shortbreak"] = "You can take a short break now ;-)";
+        notificationDescriptions["work"] = "Time for some focused time, you got this!";
+        notificationDescriptions["shortbreak"] = "Well done! You can take a short break now ;-)";
         notificationDescriptions["longbreak"] = "Well done! You can take a longer break now ;-)";
-        notificationDescriptions["end"] = "Ok, enough for today :-)";
+        notificationDescriptions["end"] = "Good job! Enough for today :-)";
         const stateNames = [];
         stateNames["work"] = "Work";
         stateNames["shortbreak"] = "Break";
@@ -90,6 +85,8 @@
                     audio.volume = 1.0;
                     audio.play();
                 }
+
+                GUI.notify(nextState);
             },
 
             start: function () {
@@ -129,6 +126,8 @@
                             this.ring("end");
                             this.setState("end");
                         }
+                    } else if (this.state === "end") {
+                        this.setState("work", true);
                     }
                 }
             },
@@ -146,7 +145,7 @@
                 App.stop();
                 this.state = state;
                 $("clock").className = this.state;
-                $("fullscreen").className = this.state;
+                GUI.flashFullscreen(state);
                 this.setSecs(GUI.getTimer(this.state));
                 this.setLastSetting(this.secs);
                 GUI.setTimer(this.secs);
@@ -169,6 +168,7 @@
 
             isFullscreen: false,
             isManualFullscreen: false,
+            notification: null,
 
             nextInput: {
                 "Minutes": "Seconds",
@@ -246,6 +246,18 @@
                 return parseInt(htmlMinutes, 10) * 60 + parseInt(htmlSeconds, 10);
             },
 
+            getTimerString: function (state) {
+
+                state = state || "";
+
+                if (state === "end") return "";
+
+                const htmlMinutes = $(state + "Minutes").value;
+                const htmlSeconds = $(state + "Seconds").value;
+
+                return htmlMinutes + ":" + htmlSeconds;
+            },
+
             lockTimer: function () {
                 const startButton = $("startButton")
                 const stopButton = $("stopButton")
@@ -294,6 +306,39 @@
                 shortbreakAudio.play();
                 longbreakAudio.play();
                 endAudio.play();
+            },
+
+            notify: function(state) {
+                if("Notification" in window){
+                    if (Notification.permission === "granted") {
+                        this.showNotification(state)
+                    }
+                    else if (Notification.permission !== "denied") {
+                        Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                this.showNotification(state)
+                            }
+                        });
+                    }
+                }
+            },
+
+            showNotification: function(state) {
+                let timer = (state === "end")? "" : "  " + this.getTimerString(state)
+                let title = notificationTitles[state] + timer;
+                let body = notificationDescriptions[state];
+                let icon = notificationIcons[state];
+
+                if (this.notification) {
+                    this.notification.close();
+                }
+
+                this.notification = new Notification(title, { body: body, icon: icon });
+
+                this.notification.onclick = function () {
+                    window.focus();
+                    this.close();
+                };
             },
 
             formatTime: function (input, value) {
@@ -578,6 +623,11 @@
                 }
             },
 
+            flashFullscreen: function(state){
+                $("fullscreen").className = state + "-flash";
+                setTimeout(function(){$("fullscreen").className = state;}, 500)
+            },
+
             evtChangeTheme: function (color) {
                 const m = document.getElementsByTagName("meta");
 
@@ -789,7 +839,7 @@
 
         /*]]>*/
     </script>
-    <style type="text/css">
+    <style>
         /*<![CDATA[*/
 
         #clock .time-div {
@@ -925,6 +975,26 @@
 
         #fullscreen.end {
             color: #F5F5F5;
+        }
+
+        #fullscreen.work-flash {
+            background-color: #64B5F6;
+            color: black;
+        }
+
+        #fullscreen.shortbreak-flash {
+            background-color: #ffe082;
+            color: black;
+        }
+
+        #fullscreen.longbreak-flash {
+            background-color: #a5d6a7;
+            color: black;
+        }
+
+        #fullscreen.end-flash {
+            background-color: #F5F5F5;
+            color: black;
         }
 
         /*]]>*/

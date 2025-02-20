@@ -14,5 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 --->
 
+## v1.1.0 - 2025-02-20
+### Added
+- Added keyboard shortcuts
+- Added browser notifications when a timer finishes
+- When a timer finishes in fullscreen, the screen flashes once to catch the attention of the user
+
 ## v1.0.0 - 2020-05-23
 - Initial release! Yay!
