@@ -26,11 +26,7 @@
         /*<![CDATA[*/
 
         /* Constants */
-        const notificationIcons = [];
-        notificationIcons["work"] = "icon.png";
-        notificationIcons["shortbreak"] = "icon.png";
-        notificationIcons["longbreak"] = "icon.png";
-        notificationIcons["end"] = "icon.png";
+        notificationIcon = "icon.png";
         const notificationTitles = [];
         notificationTitles["work"] = "Work";
         notificationTitles["shortbreak"] = "Break";
@@ -311,7 +307,9 @@
             notify: function(state) {
                 if("Notification" in window){
                     if (Notification.permission === "granted") {
-                        this.showNotification(state)
+                        if($("notifications").checked){
+                            this.showNotification(state);
+                        }
                     }
                     else if (Notification.permission !== "denied") {
                         Notification.requestPermission().then(permission => {
@@ -327,7 +325,31 @@
                 let timer = (state === "end")? "" : "  " + this.getTimerString(state)
                 let title = notificationTitles[state] + timer;
                 let body = notificationDescriptions[state];
-                let icon = notificationIcons[state];
+                let icon = notificationIcon;
+
+                this.enableNotifications();
+
+                if (this.notification) {
+                    this.notification.close();
+                }
+
+                this.notification = new Notification(title, { body: body, icon: icon });
+
+                this.notification.onclick = function () {
+                    window.focus();
+                    this.close();
+                };
+            },
+
+            enableNotifications: function () {
+                $("notifications").checked = true;
+                $("notifications").parentElement.classList.add("is-checked");
+            },
+
+            showTestNotification: function() {
+                let title = "Notifications enabled"
+                let body = "You've succesfully enabled notifications"
+                let icon = notificationIcon;
 
                 if (this.notification) {
                     this.notification.close();
@@ -454,13 +476,16 @@
             evtStartStop: function () {
                 if (Timer.timerRunning) {
                     App.stop();
+                    $("startButton").focus();
                 } else {
                     App.start();
+                    $("stopButton").focus();
                 }
             },
 
             evtReset: function () {
                 App.reset();
+                $("resetButton").focus();
             },
 
             evtNextState: function (evt) {
@@ -478,6 +503,10 @@
 
             toggleRepeat: function(){
                 $("repeat").click();
+            },
+
+            toggleNotifications: function(){
+                $("notifications").click();
             },
 
             evtDisableShortBreak: function () {
@@ -519,6 +548,21 @@
                     $(this.id + "Settings").classList.add("is-disabled");
                 }
             },
+            
+            evtToggleNotifications: function () {
+                if (this.checked) {
+                    $(this.id + "Settings").classList.remove("is-disabled");
+                    if("Notification" in window && Notification.permission !== "granted"){
+                        Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                GUI.showTestNotification();
+                            }
+                        });
+                    }
+                } else {
+                    $(this.id + "Settings").classList.add("is-disabled");
+                }
+            },
 
             evtToggleSettings: function () {
                 const settingsElem = $("cardSettings");
@@ -541,6 +585,7 @@
                 }
                 else {
                     GUI.evtMaximize();
+                    $("maximizeButton").focus();
                 }
             },
 
@@ -798,6 +843,7 @@
             $("shortbreak").addEventListener('click', GUI.evtDisableShortBreak, false);
             $("longbreak").addEventListener('click', GUI.evtDisableLongBreak, false);
             $("repeat").addEventListener('click', GUI.evtDisableRepeat, false);
+            $("notifications").addEventListener('click', GUI.evtToggleNotifications, false);
 
             $("startButton").addEventListener('click', App.start, false);
             $("stopButton").addEventListener('click', App.stop, false);
@@ -818,13 +864,22 @@
                 orientation.addEventListener("change", GUI.evtInitFullscreen, false);
             }
 
+            let notifications = $("notifications");
+            if("Notification" in window){
+                notifications.checked = Notification.permission === "granted";
+            }
+            else{
+               notifications.checked = false;
+               notifications.disabled = true;
+            }
+
             GUI.evtExpandOnResize();
 
             Timer.init();
 
         }, false);
 
-        Mousetrap.bindGlobal(['enter', 'space'], GUI.evtStartStop);
+        Mousetrap.bindGlobal(['enter', 'a', 'o'], GUI.evtStartStop);
         Mousetrap.bindGlobal('r', GUI.evtReset);
         Mousetrap.bindGlobal('n', GUI.evtNextState);
         Mousetrap.bindGlobal('f', GUI.evtToggleMaximize);
@@ -836,6 +891,7 @@
         Mousetrap.bindGlobal('t b', GUI.toggleShortBreak);
         Mousetrap.bindGlobal('t l', GUI.toggleLongBreak);
         Mousetrap.bindGlobal('t r', GUI.toggleRepeat);
+        Mousetrap.bindGlobal('t n', GUI.toggleNotifications);
 
         /*]]>*/
     </script>
@@ -1206,6 +1262,20 @@
 										<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="repeat">
 											<input type="checkbox" id="repeat" class="mdl-switch__input"
                                                    checked="checked"/>
+										</label>
+									</span>
+                                </li>
+                                <li id="notificationsSettings" class="mdl-list__item">
+									<span class="mdl-list__item-primary-content">
+										<span class="material-icons mdl-list__item-icon">notifications</span>
+										<span id="allowNotifications">Allow notifications</span>
+										<span class="mdl-tooltip mdl-tooltip--top" data-mdl-for="allowNotifications">
+                                            Enable this to show a notification when a timer finishes
+                                        </span>
+									</span>
+                                    <span class="mdl-list__item-secondary-action">
+										<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="notifications">
+											<input type="checkbox" id="notifications" class="mdl-switch__input" />
 										</label>
 									</span>
                                 </li>
