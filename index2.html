@@ -26,7 +26,8 @@
         /*<![CDATA[*/
 
         /* Constants */
-        notificationIcon = "icon.png";
+        const NAMESPACE = "tomate-timer.dev";
+        const notificationIcon = "icon.png";
         const notificationTitles = [];
         notificationTitles["work"] = "Work";
         notificationTitles["shortbreak"] = "Break";
@@ -316,6 +317,9 @@
                             if (permission === "granted") {
                                 this.showNotification(state)
                             }
+                            else {
+                                this.disableNotifications();
+                            }
                         });
                     }
                 }
@@ -342,8 +346,19 @@
             },
 
             enableNotifications: function () {
-                $("notifications").checked = true;
-                $("notifications").parentElement.classList.add("is-checked");
+                let checkbox = $("notifications");
+                checkbox.checked = true;
+                checkbox.parentElement.classList.add("is-checked");
+                $(checkbox.id + "Settings").classList.remove("is-disabled");
+                App.setSetting(checkbox.id, checkbox.checked);
+            },
+
+            disableNotifications: function () {
+                let checkbox = $("notifications");
+                checkbox.checked = false;
+                checkbox.parentElement.classList.remove("is-checked");
+                $(checkbox.id + "Settings").classList.add("is-disabled");
+                App.setSetting(checkbox.id, checkbox.checked);
             },
 
             showTestNotification: function() {
@@ -509,58 +524,73 @@
                 $("notifications").click();
             },
 
-            evtDisableShortBreak: function () {
-                if (this.checked) {
-                    $(this.id + "Now").disabled = false;
-                    $(this.id + "Minutes").disabled = false;
-                    $(this.id + "Seconds").disabled = false;
-                    $(this.id + "Settings").classList.remove("is-disabled");
+            evtToggleShortBreak: function () {
+                let checkbox = $("shortbreak");
+                App.setSetting(checkbox.id, checkbox.checked);
+
+                if (checkbox.checked) {
+                    $(checkbox.id + "Now").disabled = false;
+                    $(checkbox.id + "Minutes").disabled = false;
+                    $(checkbox.id + "Seconds").disabled = false;
+                    $(checkbox.id + "Settings").classList.remove("is-disabled");
                 } else {
-                    $(this.id + "Now").disabled = true;
-                    $(this.id + "Minutes").disabled = true;
-                    $(this.id + "Seconds").disabled = true;
-                    $(this.id + "Settings").classList.add("is-disabled");
+                    $(checkbox.id + "Now").disabled = true;
+                    $(checkbox.id + "Minutes").disabled = true;
+                    $(checkbox.id + "Seconds").disabled = true;
+                    $(checkbox.id + "Settings").classList.add("is-disabled");
                 }
             },
 
-            evtDisableLongBreak: function () {
-                if (this.checked) {
-                    $(this.id + "Now").disabled = false;
-                    $(this.id + "Minutes").disabled = false;
-                    $(this.id + "Seconds").disabled = false;
-                    $(this.id + "Session").disabled = false;
-                    $(this.id + "Settings").classList.remove("is-disabled");
-                    $(this.id + "Settings2").classList.remove("is-disabled");
+            evtToggleLongBreak: function () {
+                let checkbox = $("longbreak");
+                App.setSetting(checkbox.id, checkbox.checked);
+
+                if (checkbox.checked) {
+                    $(checkbox.id + "Now").disabled = false;
+                    $(checkbox.id + "Minutes").disabled = false;
+                    $(checkbox.id + "Seconds").disabled = false;
+                    $(checkbox.id + "Session").disabled = false;
+                    $(checkbox.id + "Settings").classList.remove("is-disabled");
+                    $(checkbox.id + "Settings2").classList.remove("is-disabled");
                 } else {
-                    $(this.id + "Now").disabled = true;
-                    $(this.id + "Minutes").disabled = true;
-                    $(this.id + "Seconds").disabled = true;
-                    $(this.id + "Session").disabled = true;
-                    $(this.id + "Settings").classList.add("is-disabled");
-                    $(this.id + "Settings2").classList.add("is-disabled");
+                    $(checkbox.id + "Now").disabled = true;
+                    $(checkbox.id + "Minutes").disabled = true;
+                    $(checkbox.id + "Seconds").disabled = true;
+                    $(checkbox.id + "Session").disabled = true;
+                    $(checkbox.id + "Settings").classList.add("is-disabled");
+                    $(checkbox.id + "Settings2").classList.add("is-disabled");
                 }
             },
 
-            evtDisableRepeat: function () {
-                if (this.checked) {
-                    $(this.id + "Settings").classList.remove("is-disabled");
+            evtToggleRepeat: function () {
+                let checkbox = $("repeat");
+                App.setSetting(checkbox.id, checkbox.checked);
+
+                if (checkbox.checked) {
+                    $(checkbox.id + "Settings").classList.remove("is-disabled");
                 } else {
-                    $(this.id + "Settings").classList.add("is-disabled");
+                    $(checkbox.id + "Settings").classList.add("is-disabled");
                 }
             },
-            
+
             evtToggleNotifications: function () {
-                if (this.checked) {
-                    $(this.id + "Settings").classList.remove("is-disabled");
+                let checkbox = $("notifications");
+
+                if (checkbox.checked) {
+                    GUI.enableNotifications();
+
                     if("Notification" in window && Notification.permission !== "granted"){
                         Notification.requestPermission().then(permission => {
                             if (permission === "granted") {
                                 GUI.showTestNotification();
                             }
+                            else {
+                                GUI.disableNotifications();
+                            }
                         });
                     }
                 } else {
-                    $(this.id + "Settings").classList.add("is-disabled");
+                    GUI.disableNotifications();
                 }
             },
 
@@ -681,6 +711,51 @@
                         m[i].content = color;
                     }
                 }
+            },
+
+            evtSelectTextOnFocus: function(){
+                const allInputs = document.getElementsByTagName("input");
+
+                for (let i = 0; i < allInputs.length; i++) {
+                    let elem = allInputs[i];
+                    if (elem.type === "number" || elem.type === "text") {
+                        elem.addEventListener("focus", Utils.selectText, false);
+                    }
+                }
+            },
+
+            evtFormatTimeOnBlur: function() {
+                const allTimeInputs = Utils.getElementsByClassName("time");
+
+                for (let i = 0; i < allTimeInputs.length; i++) {
+                    let elem = allTimeInputs[i];
+                    elem.addEventListener('blur', GUI.evtFormatTime, false);
+                    elem.addEventListener('keydown', GUI.evtCacheInput, false);
+                    elem.addEventListener('keyup', GUI.evtJumpToNextInput, false);
+                }
+            },
+
+            evtSetTimeOnChange: function() {
+                const minutesElem = $("Minutes");
+                const secondsElem = $("Seconds");
+                minutesElem.addEventListener('change', GUI.evtSetTime, false);
+                secondsElem.addEventListener('change', GUI.evtSetTime, false);
+                minutesElem.addEventListener('focus', GUI.evtFocusTime, false);
+                secondsElem.addEventListener('focus', GUI.evtFocusTime, false);
+            },
+
+            setSettings: function() {
+                $("shortbreak").checked = App.getSetting("shortbreak") === null || App.getSetting("shortbreak") === "true";
+                $("longbreak").checked = App.getSetting("longbreak") === null || App.getSetting("longbreak") === "true";
+                $("repeat").checked = App.getSetting("repeat") === null || App.getSetting("repeat") === "true";
+
+                $("notifications").checked = ("Notification" in window) && Notification.permission === "granted" &&
+                    (App.getSetting("notifications") === null || App.getSetting("notifications") === "true");
+
+                GUI.evtToggleShortBreak();
+                GUI.evtToggleLongBreak();
+                GUI.evtToggleRepeat();
+                GUI.evtToggleNotifications();
             }
         };
 
@@ -756,6 +831,14 @@
             startLongBreakNow: function () {
                 Timer.setState("longbreak", true);
                 GUI.setLongBreakSession(Timer.longbreakSession)
+            },
+            
+            getSetting: function(settingName) {
+                return localStorage.getItem(NAMESPACE + "." + settingName);
+            },
+            
+            setSetting: function(settingName, settingValue) {
+                localStorage.setItem(NAMESPACE + "." + settingName, settingValue);
             }
         };
 
@@ -808,30 +891,9 @@
         window.addEventListener("resize", GUI.evtExpandOnResize, false);
         window.addEventListener("load", function () {
 
-            const allInputs = document.getElementsByTagName("input");
-
-            for (let i = 0; i < allInputs.length; i++) {
-                let elem = allInputs[i];
-                if (elem.type === "number" || elem.type === "text") {
-                    elem.addEventListener("focus", Utils.selectText, false);
-                }
-            }
-
-            const allTimeInputs = Utils.getElementsByClassName("time");
-
-            for (let i = 0; i < allTimeInputs.length; i++) {
-                let elem = allTimeInputs[i];
-                elem.addEventListener('blur', GUI.evtFormatTime, false);
-                elem.addEventListener('keydown', GUI.evtCacheInput, false);
-                elem.addEventListener('keyup', GUI.evtJumpToNextInput, false);
-            }
-
-            const minutesElem = $("Minutes");
-            const secondsElem = $("Seconds");
-            minutesElem.addEventListener('change', GUI.evtSetTime, false);
-            secondsElem.addEventListener('change', GUI.evtSetTime, false);
-            minutesElem.addEventListener('focus', GUI.evtFocusTime, false);
-            secondsElem.addEventListener('focus', GUI.evtFocusTime, false);
+            GUI.evtSelectTextOnFocus();
+            GUI.evtFormatTimeOnBlur();
+            GUI.evtSetTimeOnChange();
 
             $("sessionCounter").addEventListener('change', GUI.evtSetSession, false);
             $("sessionsBadge").addEventListener('mouseup', GUI.evtSetSessionBadge, false);
@@ -840,9 +902,9 @@
             $("shortbreakNow").addEventListener('click', App.startShortBreakNow, false);
             $("longbreakNow").addEventListener('click', App.startLongBreakNow, false);
 
-            $("shortbreak").addEventListener('click', GUI.evtDisableShortBreak, false);
-            $("longbreak").addEventListener('click', GUI.evtDisableLongBreak, false);
-            $("repeat").addEventListener('click', GUI.evtDisableRepeat, false);
+            $("shortbreak").addEventListener('click', GUI.evtToggleShortBreak, false);
+            $("longbreak").addEventListener('click', GUI.evtToggleLongBreak, false);
+            $("repeat").addEventListener('click', GUI.evtToggleRepeat, false);
             $("notifications").addEventListener('click', GUI.evtToggleNotifications, false);
 
             $("startButton").addEventListener('click', App.start, false);
@@ -864,14 +926,7 @@
                 orientation.addEventListener("change", GUI.evtInitFullscreen, false);
             }
 
-            let notifications = $("notifications");
-            if("Notification" in window){
-                notifications.checked = Notification.permission === "granted";
-            }
-            else{
-               notifications.checked = false;
-               notifications.disabled = true;
-            }
+            GUI.setSettings();
 
             GUI.evtExpandOnResize();
 
