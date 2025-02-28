@@ -43,6 +43,14 @@
         stateNames["shortbreak"] = "Break";
         stateNames["longbreak"] = "Long Break";
         stateNames["end"] = "End";
+        const defaultValues = [];
+        defaultValues["workMinutes"] = "25";
+        defaultValues["workSeconds"] = "00";
+        defaultValues["shortbreakMinutes"] = "05";
+        defaultValues["shortbreakSeconds"] = "00";
+        defaultValues["longbreakMinutes"] = "20";
+        defaultValues["longbreakSeconds"] = "00";
+        defaultValues["longbreakSession"] = "4";
 
         function $(id) {
             return document.getElementById(id);
@@ -601,12 +609,19 @@
                     $("settingsIcon").innerHTML = "settings";
                     $("settingsTooltip").innerHTML = "Settings";
                     $("settingsButton").focus();
+                    App.setSetting("settingsButton", "false");
                 } else {
                     settingsElem.style.display = "block";
                     $("settingsIcon").innerHTML = "close";
                     $("settingsTooltip").innerHTML = "Close settings";
                     $("settingsButton").focus();
+                    App.setSetting("settingsButton", "true");
                 }
+            },
+
+            evtSetLongBreakSession: function () {
+                Timer.setLongBreakSession(this.value);
+                App.setSetting("longbreakSession", this.value);
             },
 
             evtToggleMaximize: function(){
@@ -724,7 +739,11 @@
                 }
             },
 
-            evtFormatTimeOnBlur: function() {
+            storeTime: function(){
+                App.setSetting(this.id, GUI.formatTime(this));
+            },
+
+            evtTimeInputsOnChange: function() {
                 const allTimeInputs = Utils.getElementsByClassName("time");
 
                 for (let i = 0; i < allTimeInputs.length; i++) {
@@ -732,7 +751,10 @@
                     elem.addEventListener('blur', GUI.evtFormatTime, false);
                     elem.addEventListener('keydown', GUI.evtCacheInput, false);
                     elem.addEventListener('keyup', GUI.evtJumpToNextInput, false);
+                    elem.addEventListener('change', GUI.storeTime, false);
                 }
+
+                $("longbreakSession").addEventListener('change', GUI.evtSetLongBreakSession, false);
             },
 
             evtSetTimeOnChange: function() {
@@ -744,18 +766,54 @@
                 secondsElem.addEventListener('focus', GUI.evtFocusTime, false);
             },
 
-            setSettings: function() {
+            evtButtonsAndTogglesOnClick: function() {
+                $("sessionCounter").addEventListener('change', GUI.evtSetSession, false);
+                $("sessionsBadge").addEventListener('mouseup', GUI.evtSetSessionBadge, false);
+
+                $("workNow").addEventListener('click', App.startWorkNow, false);
+                $("shortbreakNow").addEventListener('click', App.startShortBreakNow, false);
+                $("longbreakNow").addEventListener('click', App.startLongBreakNow, false);
+
+                $("shortbreak").addEventListener('click', GUI.evtToggleShortBreak, false);
+                $("longbreak").addEventListener('click', GUI.evtToggleLongBreak, false);
+                $("repeat").addEventListener('click', GUI.evtToggleRepeat, false);
+                $("notifications").addEventListener('click', GUI.evtToggleNotifications, false);
+
+                $("startButton").addEventListener('click', App.start, false);
+                $("stopButton").addEventListener('click', App.stop, false);
+                $("resetButton").addEventListener('click', App.reset, false);
+                $("maximizeButton").addEventListener('click', GUI.evtMaximize, false);
+                $("minimizeButton").addEventListener('mouseup', GUI.evtMinimize, false);
+                $("settingsButton").addEventListener('click', GUI.evtToggleSettings, false);
+
+                const fullscreenElem = $("fullscreen");
+                fullscreenElem.addEventListener('mouseup', GUI.evtStartStopReset, false);
+                fullscreenElem.addEventListener('contextmenu', GUI.evtNextState, false);
+            },
+
+            evtFullscreenOnLandscape: function() {
+                const orientation = screen.msOrientation || (screen.orientation || screen.mozOrientation);
+                if (orientation) {
+                    orientation.addEventListener("change", GUI.evtInitFullscreen, false);
+                }
+            },
+
+            loadSettings: function() {
                 $("shortbreak").checked = App.getSetting("shortbreak") === null || App.getSetting("shortbreak") === "true";
                 $("longbreak").checked = App.getSetting("longbreak") === null || App.getSetting("longbreak") === "true";
                 $("repeat").checked = App.getSetting("repeat") === null || App.getSetting("repeat") === "true";
-
                 $("notifications").checked = ("Notification" in window) && Notification.permission === "granted" &&
                     (App.getSetting("notifications") === null || App.getSetting("notifications") === "true");
+
+                for (let inputId in defaultValues) {
+                    $(inputId).value = App.getSetting(inputId) || defaultValues[inputId];
+                }
 
                 GUI.evtToggleShortBreak();
                 GUI.evtToggleLongBreak();
                 GUI.evtToggleRepeat();
                 GUI.evtToggleNotifications();
+                if(App.getSetting("settingsButton") === "true") GUI.evtToggleSettings();
             }
         };
 
@@ -890,53 +948,22 @@
 
         window.addEventListener("resize", GUI.evtExpandOnResize, false);
         window.addEventListener("load", function () {
-
             GUI.evtSelectTextOnFocus();
-            GUI.evtFormatTimeOnBlur();
+            GUI.evtTimeInputsOnChange();
             GUI.evtSetTimeOnChange();
-
-            $("sessionCounter").addEventListener('change', GUI.evtSetSession, false);
-            $("sessionsBadge").addEventListener('mouseup', GUI.evtSetSessionBadge, false);
-
-            $("workNow").addEventListener('click', App.startWorkNow, false);
-            $("shortbreakNow").addEventListener('click', App.startShortBreakNow, false);
-            $("longbreakNow").addEventListener('click', App.startLongBreakNow, false);
-
-            $("shortbreak").addEventListener('click', GUI.evtToggleShortBreak, false);
-            $("longbreak").addEventListener('click', GUI.evtToggleLongBreak, false);
-            $("repeat").addEventListener('click', GUI.evtToggleRepeat, false);
-            $("notifications").addEventListener('click', GUI.evtToggleNotifications, false);
-
-            $("startButton").addEventListener('click', App.start, false);
-            $("stopButton").addEventListener('click', App.stop, false);
-            $("resetButton").addEventListener('click', App.reset, false);
-            $("maximizeButton").addEventListener('click', GUI.evtMaximize, false);
-            $("minimizeButton").addEventListener('click', GUI.evtMinimize, false);
-            $("settingsButton").addEventListener('click', GUI.evtToggleSettings, false);
-            $("longbreakSession").addEventListener('change', function () {
-                Timer.setLongBreakSession(this.value);
-            }, false);
-
-            const fullscreenElem = $("fullscreen");
-            fullscreenElem.addEventListener('mouseup', GUI.evtStartStopReset, false);
-            fullscreenElem.addEventListener('contextmenu', GUI.evtNextState, false);
-
-            const orientation = screen.msOrientation || (screen.orientation || screen.mozOrientation);
-            if (orientation) {
-                orientation.addEventListener("change", GUI.evtInitFullscreen, false);
-            }
-
-            GUI.setSettings();
-
+            GUI.evtButtonsAndTogglesOnClick();
+            GUI.evtFullscreenOnLandscape();
             GUI.evtExpandOnResize();
-
+            GUI.loadSettings();
             Timer.init();
-
         }, false);
 
-        Mousetrap.bindGlobal(['enter', 'a', 'o'], GUI.evtStartStop);
+        Mousetrap.bindGlobal(['a', 'o'], GUI.evtStartStop);
         Mousetrap.bindGlobal('r', GUI.evtReset);
         Mousetrap.bindGlobal('n', GUI.evtNextState);
+        Mousetrap.bindGlobal('w', App.startWorkNow);
+        Mousetrap.bindGlobal('b', App.startShortBreakNow);
+        Mousetrap.bindGlobal('l', App.startLongBreakNow);
         Mousetrap.bindGlobal('f', GUI.evtToggleMaximize);
         Mousetrap.bindGlobal(['esc', 'u'], GUI.evtMinimize);
         Mousetrap.bindGlobal('e', GUI.evtEditTime, 'keyup');

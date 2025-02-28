@@ -9,7 +9,7 @@ This timer is just a static html page. So you just need to download the reposito
 ```bash
 git clone https://github.com/y-garcia/tomate-timer.git
 cd tomate-timer
-index2.html
+index.html
 ```
 
 ## Usage
