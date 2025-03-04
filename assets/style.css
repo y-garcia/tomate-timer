@@ -1,0 +1,150 @@
+#clock .time-div {
+    width: 100px;
+}
+
+#clock .time-div input {
+    font-size: 90px;
+}
+
+#clock .time-div input::selection {
+    background: white;
+}
+
+#clock .time-div input::-moz-selection {
+    background: white;
+}
+
+#clock {
+    text-align: center;
+    font-size: 90px;
+    background-color: #64B5F6;
+}
+
+#clock.work {
+    background-color: #64B5F6;
+}
+
+#clock.shortbreak {
+    background-color: #ffe082;
+}
+
+#clock.longbreak {
+    background-color: #a5d6a7;
+}
+
+#clock.end {
+    background-color: #F5F5F5;
+}
+
+#task {
+    float: right;
+}
+
+#task input[type="number"], #settings input[type="number"] {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+    text-align: center;
+    display: inline;
+    padding: 0;
+}
+
+#cardSettings {
+    display: none;
+}
+
+#settings input:disabled,
+#settings .is-disabled,
+#settings .is-disabled .mdl-list__item-sub-title,
+#settings .is-disabled .mdl-list__item-icon {
+    color: #bdbdbd;
+    cursor: auto;
+}
+
+#settings .mdl-list__item-avatar {
+    background-color: inherit;
+}
+
+#buttons {
+    text-align: right;
+}
+
+#startButton {
+    width: 145px;
+}
+
+#resetButton {
+    margin-right: 8px;
+}
+
+#timerIcon {
+    margin-right: 3px;
+}
+
+#fullscreen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: none;
+    background-color: black;
+}
+
+#fullscreenClock {
+    font-size: 20vw;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+
+#sessionsBadge {
+    position: absolute;
+    top: 25px;
+    right: 15px;
+}
+
+#minimizeButton {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}
+
+#fullscreen.work {
+    color: #64B5F6
+}
+
+#fullscreen.shortbreak {
+    color: #ffe082;
+}
+
+#fullscreen.longbreak {
+    color: #a5d6a7;
+}
+
+#fullscreen.end {
+    color: #F5F5F5;
+}
+
+#fullscreen.work-flash {
+    background-color: #64B5F6;
+    color: black;
+}
+
+#fullscreen.shortbreak-flash {
+    background-color: #ffe082;
+    color: black;
+}
+
+#fullscreen.longbreak-flash {
+    background-color: #a5d6a7;
+    color: black;
+}
+
+#fullscreen.end-flash {
+    background-color: #F5F5F5;
+    color: black;
+}

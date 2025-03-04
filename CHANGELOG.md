@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 --->
 
+## v1.2.1 - 2025-03-04
+### Changed
+- The buttons to start each individual timer are now colored to improve user experience
+- Extracted javascript and css into their own files for readability
+### Fixed
+- Fixed the ripple effect not working on the start button
+
 ## v1.2.0 - 2025-02-28
 ### Added
 - Settings are now stored between sessions
