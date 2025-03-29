@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 --->
 
+## v1.2.2 - 2025-03-29
+### Fixed
+- Fixed notifications not working on android
+
 ## v1.2.1 - 2025-03-04
 ### Changed
 - The buttons to start each individual timer are now colored to improve user experience

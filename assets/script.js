@@ -1,6 +1,6 @@
 /* Constants */
 const NAMESPACE = "tomate-timer";
-const notificationIcon = "icon.png";
+const notificationIcon = "assets/icon.png";
 const notificationTitles = [];
 notificationTitles["work"] = "Work";
 notificationTitles["shortbreak"] = "Break";
@@ -282,9 +282,8 @@ const GUI = {
             else if (Notification.permission !== "denied") {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        this.showNotification(state)
-                    }
-                    else {
+                        this.showNotification(state);
+                    } else {
                         this.disableNotifications();
                     }
                 });
@@ -293,23 +292,36 @@ const GUI = {
     },
 
     showNotification: function(state) {
-        let timer = (state === "end")? "" : "  " + this.getTimerString(state)
-        let title = notificationTitles[state] + timer;
-        let body = notificationDescriptions[state];
+        let title = "Notifications enabled";
+        let body = "You've successfully enabled notifications";
         let icon = notificationIcon;
+        let tag = "tomate-timer";
+        let discardMilliseconds = 25000;
+
+        if(state){
+            let timer = (state === "end") ? "" : "  " + this.getTimerString(state);
+            title = notificationTitles[state] + timer;
+            body = notificationDescriptions[state];
+        }
 
         this.enableNotifications();
 
-        if (this.notification) {
-            this.notification.close();
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js");
+            navigator.serviceWorker.ready.then(registration => {
+                registration.getNotifications({tag: tag})
+                .then((notifications) => { notifications.forEach(notification => notification.close()); })
+                .then(() => registration.showNotification(title, {body: body, icon: icon, tag: tag}))
+                .then(() => registration.getNotifications({tag: tag}))
+                .then(notifications => { setTimeout(() => notifications.forEach(notification => notification.close()), discardMilliseconds); });
+            });
+        } else {
+            if (this.notification) {
+                this.notification.close();
+            }
+            this.notification = new Notification(title, { body: body, icon: icon });
+            this.notification.onclick = function () {window.focus(); this.close();};
         }
-
-        this.notification = new Notification(title, { body: body, icon: icon });
-
-        this.notification.onclick = function () {
-            window.focus();
-            this.close();
-        };
     },
 
     enableNotifications: function () {
@@ -326,23 +338,6 @@ const GUI = {
         checkbox.parentElement.classList.remove("is-checked");
         $(checkbox.id + "Settings").classList.add("is-disabled");
         App.setSetting(checkbox.id, checkbox.checked);
-    },
-
-    showTestNotification: function() {
-        let title = "Notifications enabled"
-        let body = "You've succesfully enabled notifications"
-        let icon = notificationIcon;
-
-        if (this.notification) {
-            this.notification.close();
-        }
-
-        this.notification = new Notification(title, { body: body, icon: icon });
-
-        this.notification.onclick = function () {
-            window.focus();
-            this.close();
-        };
     },
 
     formatTime: function (input, value) {
@@ -547,7 +542,7 @@ const GUI = {
             if("Notification" in window && Notification.permission !== "granted"){
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        GUI.showTestNotification();
+                        GUI.showNotification();
                     }
                     else {
                         GUI.disableNotifications();
@@ -756,11 +751,10 @@ const GUI = {
     },
 
     loadSettings: function() {
-        $("shortbreak").checked = App.getSetting("shortbreak") === null || App.getSetting("shortbreak") === "true";
-        $("longbreak").checked = App.getSetting("longbreak") === null || App.getSetting("longbreak") === "true";
-        $("repeat").checked = App.getSetting("repeat") === null || App.getSetting("repeat") === "true";
-        $("notifications").checked = ("Notification" in window) && Notification.permission === "granted" &&
-            (App.getSetting("notifications") === null || App.getSetting("notifications") === "true");
+        $("shortbreak").checked = Utils.isNullOrTrue(App.getSetting("shortbreak"));
+        $("longbreak").checked = Utils.isNullOrTrue(App.getSetting("longbreak"));
+        $("repeat").checked = Utils.isNullOrTrue(App.getSetting("repeat"));
+        $("notifications").checked = ("Notification" in window) && Notification.permission === "granted" && Utils.isNullOrTrue(App.getSetting("notifications"));
 
         for (let inputId in defaultValues) {
             $(inputId).value = App.getSetting(inputId) || defaultValues[inputId];
@@ -900,6 +894,10 @@ const Utils = {
 
     selectText: function (evt) {
         evt.target.select();
+    },
+
+    isNullOrTrue: function(value) {
+        return value === null | value === "true";
     }
 };
 
