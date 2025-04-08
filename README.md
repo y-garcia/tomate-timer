@@ -2,6 +2,13 @@
 
 My own implementation of the [Pomodoro®](https://francescocirillo.com/pages/pomodoro-technique) timer.
 
+## Support ❤️
+
+Hey there! I'm Yeray. If you found this tool helpful, or just helped you focus a little better - 
+and you feel like showing a little love - you can buy me a coffee. Glad I could help! 🙏🏼 
+
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" width="200">](https://www.buymeacoffee.com/yeraflow)
+
 ## Installation
 
 This timer is just a static html page. So you just need to download the repository and open the `index.html` file.
@@ -55,3 +62,10 @@ See also the list of [contributors](https://github.com/y-garcia/tomate-timer/con
 ## License
 
 This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/). See the [LICENSE](LICENSE) file for details.
+
+## Support ❤️
+
+Hey there! I'm Yeray. If you found this tool helpful, or just helped you focus a little better -
+and you feel like showing a little love - you can buy me a coffee. Glad I could help! 🙏🏼
+
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" width="200">](https://www.buymeacoffee.com/yeraflow)
